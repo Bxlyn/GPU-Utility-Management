@@ -1,11 +1,8 @@
-public class User {
+abstract class User {
     private String username;
     private String password;
     private String name;
     
-    public User(){
-        this("","","");
-    }
 
     public User(String username, String password, String name) {
         this.username = username;
