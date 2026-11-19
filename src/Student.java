@@ -45,7 +45,8 @@ public class Student extends User {
     public int getAvailableMinutes() {
         return allocatedMinutes - usedMinutes - reservedMinutes;
     }
-
+    
+    //For Simulation purposes
     public void approve() {
         if (!approved) {
             approved = true;
