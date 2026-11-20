@@ -276,6 +276,92 @@ public class StudentDashboardPanel extends JPanel {
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         actions.setOpaque(false);
         actions.add(detailsButton);
+        JButton cancelJobButton = new JButton("Cancel job");
+        cancelJobButton.setForeground(maroon);
+
+        cancelJobButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent event) {
+                int selectedRow = jobsTable.getSelectedRow();
+
+                if (selectedRow == -1) {
+                    JOptionPane.showMessageDialog(
+                            StudentDashboardPanel.this,
+                            "Select a job from the table first.",
+                            "No job selected",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                int modelRow = jobsTable.convertRowIndexToModel(selectedRow);
+                String status = model.getValueAt(modelRow, 3).toString();
+                Object jobId = model.getValueAt(modelRow, 0);
+
+                if (!status.equals("Queued") && !status.equals("Running")) {
+                    JOptionPane.showMessageDialog(
+                            StudentDashboardPanel.this,
+                            "Only queued or running jobs can be cancelled.",
+                            "Cannot cancel job",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                String chargeRule;
+
+                if (status.equals("Queued")) {
+                    chargeRule = "Queued jobs have no cancellation charge.";
+                } else {
+                    chargeRule = "Running jobs are charged for elapsed runtime only.";
+                }
+
+                JTextArea reasonField = new JTextArea(4, 25);
+                reasonField.setLineWrap(true);
+                reasonField.setWrapStyleWord(true);
+
+                Object[] message = {
+                    "Job ID: " + jobId,
+                    chargeRule,
+                    "The full reservation is released on cancellation.",
+                    "Enter a cancellation reason:",
+                    new JScrollPane(reasonField),
+                    "Preview only: this will not cancel the job."
+                };
+
+                while (true) {
+                    int choice = JOptionPane.showConfirmDialog(
+                            StudentDashboardPanel.this,
+                            message,
+                            "Review cancellation",
+                            JOptionPane.OK_CANCEL_OPTION,
+                            JOptionPane.QUESTION_MESSAGE);
+
+                    if (choice != JOptionPane.OK_OPTION) {
+                        return;
+                    }
+
+                    if (reasonField.getText().trim().isEmpty()) {
+                        JOptionPane.showMessageDialog(
+                                StudentDashboardPanel.this,
+                                "Please enter a cancellation reason.",
+                                "Missing reason",
+                                JOptionPane.WARNING_MESSAGE);
+                        continue;
+                    }
+
+                    // Later, pass the job ID and reason to the backend.
+                    JOptionPane.showMessageDialog(
+                            StudentDashboardPanel.this,
+                            "Cancellation preview checked for job " + jobId
+                            + ".\nNo job or balance has been changed.",
+                            "Preview only",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                }
+            }
+        });
+
+        actions.add(Box.createHorizontalStrut(10));
+        actions.add(cancelJobButton);
 
         JPanel bottom = new JPanel(new BorderLayout(0, 10));
         bottom.setOpaque(false);
