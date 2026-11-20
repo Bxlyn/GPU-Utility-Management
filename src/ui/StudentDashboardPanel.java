@@ -222,7 +222,68 @@ public class StudentDashboardPanel extends JPanel {
                 "Sample data only. Wait shows remaining wait for queued jobs.");
         note.setFont(new Font("SansSerif", Font.PLAIN, 12));
         note.setForeground(ink);
-        jobsPanel.add(note, BorderLayout.SOUTH);
+        JButton detailsButton = new JButton("View details");
+        detailsButton.setBackground(maroon);
+        detailsButton.setForeground(cotton);
+        detailsButton.setOpaque(true);
+
+        detailsButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent event) {
+                int selectedRow = jobsTable.getSelectedRow();
+
+                if (selectedRow == -1) {
+                    JOptionPane.showMessageDialog(
+                            StudentDashboardPanel.this,
+                            "Select a job from the table first.",
+                            "No job selected",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                // Find the original data row after filtering or sorting.
+                int modelRow = jobsTable.convertRowIndexToModel(selectedRow);
+
+                StringBuilder details = new StringBuilder();
+
+                for (int column = 0; column < model.getColumnCount(); column++) {
+                    details.append(model.getColumnName(column))
+                           .append(": ")
+                           .append(model.getValueAt(modelRow, column))
+                           .append("\n");
+                }
+
+                details.append("\nSample data only.");
+
+                JTextArea detailsArea = new JTextArea(details.toString());
+                detailsArea.setEditable(false);
+                detailsArea.setFont(new Font("SansSerif", Font.PLAIN, 14));
+                detailsArea.setBackground(cotton);
+                detailsArea.setForeground(ink);
+                detailsArea.setCaretPosition(0);
+
+                JScrollPane detailsScroll = new JScrollPane(detailsArea);
+                detailsScroll.setPreferredSize(new Dimension(400, 230));
+
+                JOptionPane.showMessageDialog(
+                        StudentDashboardPanel.this,
+                        detailsScroll,
+                        "Job details",
+                        JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        actions.setOpaque(false);
+        actions.add(detailsButton);
+
+        JPanel bottom = new JPanel(new BorderLayout(0, 10));
+        bottom.setOpaque(false);
+        bottom.add(actions, BorderLayout.NORTH);
+        bottom.add(note, BorderLayout.SOUTH);
+
+        jobsPanel.add(bottom, BorderLayout.SOUTH);
+        
 
         return jobsPanel;
     }
