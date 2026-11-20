@@ -5,7 +5,17 @@ public class GPU {
     private int gpuId;
     private Job currentJob;
 
-    
+    // Constructor
+    public GPU(int gpuId) {
+        if (gpuId < 1 || gpuId > 4) {
+            throw new IllegalArgumentException(
+                "GPU ID must be between 1 and 4"
+            );
+        }
+
+        this.gpuId = gpuId;
+        this.currentJob = null;
+    }
 
     // Getters
     public int getGpuId() {
