@@ -79,7 +79,29 @@ public class StudentDashboardPanel extends JPanel {
         JLabel heading = new JLabel("My jobs");
         heading.setFont(new Font("SansSerif", Font.BOLD, 18));
         heading.setForeground(maroon);
-        jobsPanel.add(heading, BorderLayout.NORTH);
+
+        JButton submitButton = new JButton("Submit job");
+        submitButton.setBackground(maroon);
+        submitButton.setForeground(cotton);
+        submitButton.setOpaque(true);
+
+        submitButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent event) {
+                Window owner = SwingUtilities.getWindowAncestor(
+                        StudentDashboardPanel.this);
+
+                SubmitJobDialog dialog = new SubmitJobDialog(owner);
+                dialog.setVisible(true);
+            }
+        });
+
+        JPanel toolbar = new JPanel(new BorderLayout());
+        toolbar.setOpaque(false);
+        toolbar.add(heading, BorderLayout.WEST);
+        toolbar.add(submitButton, BorderLayout.EAST);
+
+        jobsPanel.add(toolbar, BorderLayout.NORTH);
 
         String[] columns = {
             "Job ID", "Title", "Application", "Status",
