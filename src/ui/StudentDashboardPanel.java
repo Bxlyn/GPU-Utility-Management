@@ -1,0 +1,154 @@
+package ui;
+
+import java.awt.*;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+
+public class StudentDashboardPanel extends JPanel {
+
+    private static final long serialVersionUID = 1L;
+
+    private final Color cotton = Color.decode("#EDEBDE");
+    private final Color maroon = Color.decode("#630102");
+    private final Color ink = Color.decode("#1B1716");
+
+    public StudentDashboardPanel() {
+        setLayout(new BorderLayout(20, 20));
+        setBackground(cotton);
+        setBorder(BorderFactory.createEmptyBorder(24, 24, 24, 24));
+
+        // Heading
+        JPanel heading = new JPanel(new GridLayout(2, 1, 0, 8));
+        heading.setOpaque(false);
+
+        JLabel title = new JLabel("My workspace");
+        title.setFont(new Font("SansSerif", Font.BOLD, 26));
+        title.setForeground(maroon);
+
+        JLabel subtitle = new JLabel(
+                "Student dashboard preview — sample data");
+        subtitle.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        subtitle.setForeground(ink);
+
+        heading.add(title);
+        heading.add(subtitle);
+
+        // Sample balances: 100 - 20 - 30 = 50 available minutes.
+        JPanel balances = new JPanel(new GridLayout(1, 4, 16, 0));
+        balances.setOpaque(false);
+
+        balances.add(createBalance("Allocated", 100));
+        balances.add(createBalance("Used", 20));
+        balances.add(createBalance("Reserved", 30));
+        balances.add(createBalance("Available", 50));
+
+        JPanel top = new JPanel(new BorderLayout(0, 24));
+        top.setOpaque(false);
+        top.add(heading, BorderLayout.NORTH);
+        top.add(balances, BorderLayout.CENTER);
+
+        add(top, BorderLayout.NORTH);
+
+        add(createJobsPanel(), BorderLayout.CENTER);
+    }
+        
+
+    private JPanel createBalance(String label, int minutes) {
+        JPanel panel = new JPanel(new GridLayout(2, 1, 0, 8));
+        panel.setBackground(Color.decode("#FAF9F4"));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(3, 0, 0, 0, maroon),
+                BorderFactory.createEmptyBorder(16, 16, 16, 16)));
+
+        JLabel name = new JLabel(label);
+        name.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        name.setForeground(ink);
+
+        JLabel value = new JLabel(minutes + " min");
+        value.setFont(new Font("SansSerif", Font.BOLD, 22));
+        value.setForeground(maroon);
+
+        panel.add(name);
+        panel.add(value);
+        return panel;
+    }
+    private JPanel createJobsPanel() {
+        JPanel jobsPanel = new JPanel(new BorderLayout(0, 12));
+        jobsPanel.setOpaque(false);
+
+        JLabel heading = new JLabel("My jobs");
+        heading.setFont(new Font("SansSerif", Font.BOLD, 18));
+        heading.setForeground(maroon);
+        jobsPanel.add(heading, BorderLayout.NORTH);
+
+        String[] columns = {
+            "Job ID", "Title", "Application", "Status",
+            "GPU", "Duration (min)", "Wait (min)"
+        };
+
+        // Preview records for one student.
+        // Completed durations total 20; queued reservations total 30.
+        Object[][] sampleJobs = {
+            {1, "Image classification", "Python", "Completed",
+                "GPU 1", 15, 0},
+            {2, "Matrix calculation", "MATLAB", "Completed",
+                "GPU 2", 5, 0},
+            {3, "Model training", "PyTorch", "Queued",
+                "Not assigned", 30, 10},
+            {4, "Image processing", "Python", "Cancelled",
+                "Not assigned", 5, "-"}
+        };
+
+        DefaultTableModel model = new DefaultTableModel(
+                sampleJobs, columns) {
+
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        JTable jobsTable = new JTable(model);
+        jobsTable.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        jobsTable.setRowHeight(34);
+        jobsTable.setForeground(ink);
+        jobsTable.setBackground(Color.decode("#FAF9F4"));
+
+        jobsTable.setSelectionBackground(maroon);
+        jobsTable.setSelectionForeground(cotton);
+        jobsTable.setSelectionMode(
+                ListSelectionModel.SINGLE_SELECTION);
+
+        jobsTable.setShowVerticalLines(false);
+        jobsTable.setGridColor(Color.decode("#D5D0C4"));
+        jobsTable.setFillsViewportHeight(true);
+
+        jobsTable.getTableHeader().setFont(
+                new Font("SansSerif", Font.BOLD, 13));
+        jobsTable.getTableHeader().setReorderingAllowed(false);
+
+        // Preserve readable columns; scroll horizontally if needed.
+        jobsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+        int[] widths = {65, 180, 110, 100, 110, 115, 90};
+
+        for (int i = 0; i < widths.length; i++) {
+            jobsTable.getColumnModel().getColumn(i)
+                    .setPreferredWidth(widths[i]);
+        }
+
+        JScrollPane scrollPane = new JScrollPane(jobsTable);
+        scrollPane.setBorder(BorderFactory.createLineBorder(
+                Color.decode("#D5D0C4")));
+
+        jobsPanel.add(scrollPane, BorderLayout.CENTER);
+
+        JLabel note = new JLabel(
+                "Sample data only. Wait shows remaining wait for queued jobs.");
+        note.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        note.setForeground(ink);
+        jobsPanel.add(note, BorderLayout.SOUTH);
+
+        return jobsPanel;
+    }
+}
