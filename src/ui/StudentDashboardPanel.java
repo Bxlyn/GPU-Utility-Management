@@ -3,6 +3,10 @@ package ui;
 import java.awt.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.table.TableRowSorter;
+import java.util.regex.Pattern;
 
 public class StudentDashboardPanel extends JPanel {
 
@@ -101,7 +105,23 @@ public class StudentDashboardPanel extends JPanel {
         toolbar.add(heading, BorderLayout.WEST);
         toolbar.add(submitButton, BorderLayout.EAST);
 
-        jobsPanel.add(toolbar, BorderLayout.NORTH);
+        JTextField searchField = new JTextField();
+
+        JLabel searchLabel = new JLabel("Search my jobs:");
+        searchLabel.setForeground(ink);
+        searchLabel.setLabelFor(searchField);
+
+        JPanel searchPanel = new JPanel(new BorderLayout(10, 0));
+        searchPanel.setOpaque(false);
+        searchPanel.add(searchLabel, BorderLayout.WEST);
+        searchPanel.add(searchField, BorderLayout.CENTER);
+
+        JPanel tableHeader = new JPanel(new BorderLayout(0, 12));
+        tableHeader.setOpaque(false);
+        tableHeader.add(toolbar, BorderLayout.NORTH);
+        tableHeader.add(searchPanel, BorderLayout.SOUTH);
+
+        jobsPanel.add(tableHeader, BorderLayout.NORTH);
 
         String[] columns = {
             "Job ID", "Title", "Application", "Status",
@@ -131,6 +151,39 @@ public class StudentDashboardPanel extends JPanel {
         };
 
         JTable jobsTable = new JTable(model);
+        TableRowSorter<DefaultTableModel> sorter =
+                new TableRowSorter<>(model);
+        jobsTable.setRowSorter(sorter);
+
+        searchField.getDocument().addDocumentListener(
+                new DocumentListener() {
+
+            private void filterJobs() {
+                String search = searchField.getText().trim();
+
+                if (search.isEmpty()) {
+                    sorter.setRowFilter(null);
+                } else {
+                    sorter.setRowFilter(RowFilter.regexFilter(
+                            "(?i)" + Pattern.quote(search)));
+                }
+            }
+
+            @Override
+            public void insertUpdate(DocumentEvent event) {
+                filterJobs();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent event) {
+                filterJobs();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent event) {
+                filterJobs();
+            }
+        });
         jobsTable.setFont(new Font("SansSerif", Font.PLAIN, 13));
         jobsTable.setRowHeight(34);
         jobsTable.setForeground(ink);
