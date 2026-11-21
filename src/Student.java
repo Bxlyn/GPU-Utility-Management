@@ -82,6 +82,24 @@ public class Student extends User {
         usedMinutes += charged;
     }
 
+
+    public void setAllocatedMinutes(int minutes) {
+        if (!approved) {
+            throw new IllegalStateException(
+                "Student must be approved first"
+            );
+        }
+
+        if (minutes < usedMinutes + reservedMinutes) {
+            throw new IllegalArgumentException(
+                "Allocation cannot be less than used and reserved minutes"
+            );
+        }
+
+        allocatedMinutes = minutes;
+    }
+
+
     @Override
     public String toString() {
         return "Student: " + getName() +
