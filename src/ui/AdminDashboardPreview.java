@@ -13,9 +13,14 @@ public class AdminDashboardPreview {
                         new JFrame("Administrator dashboard preview");
 
                 window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                window.setContentPane(new AdminDashboardPanel());
-                window.setSize(950, 600);
-                window.setMinimumSize(new Dimension(780, 450));
+                JTabbedPane tabs = new JTabbedPane();
+
+                tabs.addTab("Registration Requests", new AdminDashboardPanel());
+                tabs.addTab("GPU Monitor", new GpuMonitorPanel());
+
+                window.setContentPane(tabs);
+                window.setSize(1100, 700);
+                window.setMinimumSize(new Dimension(1000, 580));
                 window.setLocationRelativeTo(null);
                 window.setVisible(true);
             }
