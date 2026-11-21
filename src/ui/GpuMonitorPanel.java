@@ -8,6 +8,8 @@ import backend.TaskSize;
 import java.awt.*;
 import java.awt.event.*;
 import java.time.LocalDateTime;
+import java.time.Duration;
+import java.util.Locale;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
@@ -22,6 +24,10 @@ public class GpuMonitorPanel extends JPanel implements ActionListener {
     private final DateTimeFormatter format =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private Scheduler scheduler;
+    private LocalDateTime simulationStart;
+    private final JLabel utilization = new JLabel("Utilization: N/A");
+    private final JButton details = new JButton("View details");
+    private JTable table;
     private final JSpinner startPicker = new JSpinner(new SpinnerDateModel());
     private final JButton initialize = new JButton("Initialize clock");
     private final JButton loadDemo = new JButton("Load 5 demo jobs");
@@ -84,7 +90,8 @@ public class GpuMonitorPanel extends JPanel implements ActionListener {
             gpuCards.add(card);
         }
         center.add(gpuCards, BorderLayout.NORTH);
-        JTable table = new JTable(jobs);
+        table = new JTable(jobs);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setRowHeight(32);
         table.setFillsViewportHeight(true);
         table.setBackground(Color.decode("#FAF9F4"));
@@ -101,8 +108,16 @@ public class GpuMonitorPanel extends JPanel implements ActionListener {
 
         JPanel bottom = new JPanel(new GridLayout(0, 1, 0, 8));
         bottom.setOpaque(false);
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        actions.setOpaque(false);
+        details.setBackground(maroon);
+        details.setForeground(cotton);
+        details.addActionListener(this);
+        actions.add(details);
+        bottom.add(actions);
         bottom.add(summary);
-        bottom.add(new JLabel("Demo session: real scheduling; no login, allowances, cancellation or file saving connected."));
+        bottom.add(utilization);
+        bottom.add(new JLabel("Demo jobs: allowances, cancellation controls and file saving are not connected."));
         add(bottom, BorderLayout.SOUTH);
         loadDemo.setEnabled(false);
         advance.setEnabled(false);
@@ -110,6 +125,10 @@ public class GpuMonitorPanel extends JPanel implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent event) {
+        if (event.getSource() == details) {
+            showJobDetails();
+            return;
+        }
         if (event.getSource() == initialize) {
             try {
                 startPicker.commitEdit();
@@ -121,6 +140,7 @@ public class GpuMonitorPanel extends JPanel implements ActionListener {
             LocalDateTime start = LocalDateTime.ofInstant(
                     selected.toInstant(), ZoneId.systemDefault()).withSecond(0).withNano(0);
             scheduler = new Scheduler(start);
+            simulationStart = start;
             startPicker.setEnabled(false);
             initialize.setEnabled(false);
             loadDemo.setEnabled(true);
@@ -159,6 +179,12 @@ public class GpuMonitorPanel extends JPanel implements ActionListener {
                         + "</html>");
             }
         }
+        Integer selectedId = null;
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow >= 0) {
+            selectedId = ((Number) jobs.getValueAt(
+                    table.convertRowIndexToModel(selectedRow), 0)).intValue();
+        }
         jobs.setRowCount(0);
         int completed = 0;
         int cancelled = 0;
@@ -174,8 +200,108 @@ public class GpuMonitorPanel extends JPanel implements ActionListener {
                 time(scheduler.getPredictedFinish(job.getJobId())),
                 queued ? scheduler.getRemainingWait(job.getJobId()) : "-"});
         }
+        if (selectedId != null) {
+            for (int row = 0; row < jobs.getRowCount(); row++) {
+                if (((Number) jobs.getValueAt(row, 0)).intValue() == selectedId) {
+                    int viewRow = table.convertRowIndexToView(row);
+                    table.setRowSelectionInterval(viewRow, viewRow);
+                    break;
+                }
+            }
+        }
+        utilization.setText(utilizationText());
         summary.setText("Busy GPUs: " + busy + "/4    Queued: "
                 + scheduler.getWaitingJobs().size() + "    Running: " + busy
                 + "    Completed: " + completed + "    Cancelled: " + cancelled);
     }
+
+    private String utilizationText() {
+        if (scheduler == null || simulationStart == null) {
+            return "Utilization: N/A";
+        }
+        long elapsed = Duration.between(
+                simulationStart, scheduler.getSimulationTime()).toMinutes();
+        if (elapsed == 0) return "Utilization: N/A (no elapsed minutes)";
+
+        // Runtime includes work already done by running and cancelled jobs.
+        long busyMinutes = 0;
+        for (Job job : scheduler.getAllJobs()) {
+            busyMinutes += job.getElapsedRuntime();
+        }
+        double percent = 100.0 * busyMinutes / (4.0 * elapsed);
+        return String.format(Locale.ROOT,
+                "Utilization: %.2f%%    Busy GPU minutes: %d    Elapsed minutes: %d",
+                percent, busyMinutes, elapsed);
+    }
+
+    private void showJobDetails() {
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow < 0 || scheduler == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Select a job from the table first.",
+                    "No job selected", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        int modelRow = table.convertRowIndexToModel(selectedRow);
+        int jobId = ((Number) jobs.getValueAt(modelRow, 0)).intValue();
+        Job job = scheduler.findJob(jobId);
+        if (job == null) return;
+
+        JTextArea text = new JTextArea(jobDetailsText(job), 20, 55);
+        text.setEditable(false);
+        text.setLineWrap(true);
+        text.setWrapStyleWord(true);
+        text.setCaretPosition(0);
+        JOptionPane.showMessageDialog(this, new JScrollPane(text),
+                "Job " + jobId + " details", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private String jobDetailsText(Job job) {
+        LocalDateTime waitEnd = job.getStartTime();
+        if (waitEnd == null) {
+            waitEnd = job.getCancellationTime() != null
+                    ? job.getCancellationTime() : scheduler.getSimulationTime();
+        }
+        long queueWait = Duration.between(
+                job.getSubmissionTime(), waitEnd).toMinutes();
+        String waitLabel = job.getStatus() == JobStatus.QUEUED
+                ? "Queue wait so far" : "Total queue wait";
+
+        String result = "Job ID: " + job.getJobId()
+                + "\nStudent ID: " + job.getStudentId()
+                + "\nTitle: " + job.getTitle()
+                + "\nApplication: " + job.getApplicationName()
+                + "\nDescription: " + job.getDescription()
+                + "\nTask size: " + job.getTaskSize()
+                + "\nStatus: " + job.getStatus()
+                + "\nGPU: " + (job.getAssignedGpuId() < 0
+                        ? "Not assigned" : job.getAssignedGpuId())
+                + "\n\nSubmitted: " + time(job.getSubmissionTime())
+                + "\nStarted: " + time(job.getStartTime())
+                + "\nFinished: " + time(job.getFinishTime())
+                + "\nEstimated duration: " + job.getEstimatedDuration() + " min"
+                + "\nRuntime: " + job.getElapsedRuntime() + " min"
+                + "\nRemaining runtime: " + job.getRemainingRuntime() + " min"
+                + "\n" + waitLabel + ": " + queueWait + " min";
+
+        if (job.getStatus() == JobStatus.QUEUED
+                || job.getStatus() == JobStatus.RUNNING) {
+            result += "\nPredicted start: "
+                    + time(scheduler.getPredictedStart(job.getJobId()))
+                    + "\nPredicted finish: "
+                    + time(scheduler.getPredictedFinish(job.getJobId()));
+            if (job.getStatus() == JobStatus.QUEUED) {
+                result += "\nRemaining wait: "
+                        + scheduler.getRemainingWait(job.getJobId()) + " min";
+            }
+        }
+        if (job.getStatus() == JobStatus.CANCELLED) {
+            result += "\n\nCancelled: " + time(job.getCancellationTime())
+                    + "\nCancelled by: " + job.getCancelledBy()
+                    + "\nReason: " + job.getCancellationReason();
+        }
+        return result + "\n\nAllowance charged: not recorded in this demo."
+                + "\nJob execution is simulated.";
+    }
+
 }
