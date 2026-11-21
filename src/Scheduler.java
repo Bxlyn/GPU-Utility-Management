@@ -126,11 +126,13 @@ public class Scheduler {
     }
 
     // Advance simulation clock by one minute
-    public void advanceMinute() {
+    public ArrayList<Job> advanceMinute() {
+
+        ArrayList<Job> completedJobs = new ArrayList<>();
 
         simulationTime = simulationTime.plusMinutes(1);
 
-        // Update all currently running jobs
+        // Update running jobs
         for (GPU gpu : gpus) {
 
             if (!gpu.isAvailable()) {
@@ -139,18 +141,19 @@ public class Scheduler {
 
                 job.advanceOneMinute();
 
-                // Check if the job has finished
                 if (job.getRemainingRuntime() == 0) {
 
                     job.complete(simulationTime);
-
+                    completedJobs.add(job);
                     gpu.releaseJob();
                 }
             }
         }
 
-        // Start waiting jobs on free GPUs
+        // Start queued jobs on available GPUs
         dispatchJobs();
+
+        return completedJobs;
     }
 
     // Search for a job by ID
