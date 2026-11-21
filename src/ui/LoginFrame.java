@@ -1,14 +1,18 @@
 package ui;
 
+import backend.Admin;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
 import javax.swing.*;
 import javax.swing.border.*;
 
-/** Front-end starter. Authentication and account storage are not implemented here. */
+/** Admin login is connected; student accounts still need a backend service. */
 public class LoginFrame extends JFrame implements ActionListener {
     private static final long serialVersionUID = 1L;
+    private final Admin administrator = new Admin();
+    private JPanel adminScreen;
+
     private final CardLayout screens = new CardLayout();
     private final JPanel content = new JPanel(screens);
     private final JTextField username = new JTextField();
@@ -147,14 +151,64 @@ public class LoginFrame extends JFrame implements ActionListener {
                 error(loginMessage, "Enter your username and password.");
                 return;
             }
-            // BACK-END CONNECTION: call your friend's login method here.
-            // On success, open the dashboard for the returned user's role.
-            // Do not treat non-empty fields as successful authentication.
-            loginMessage.setForeground(Theme.MUTED);
-            loginMessage.setText("Form ready. Authentication is not connected yet.");
+            String enteredUsername = username.getText().trim();
+            if (!administrator.getUsername().equals(enteredUsername)) {
+                error(loginMessage, "Student login is not connected yet.");
+                return;
+            }
+            if (!administrator.checkPassword(new String(enteredPassword))) {
+                error(loginMessage, "Incorrect administrator password.");
+                return;
+            }
+            password.setText("");
+            loginMessage.setText(" ");
+            openAdminDashboard();
         } finally {
             Arrays.fill(enteredPassword, '\0');
         }
+    }
+
+    private void openAdminDashboard() {
+        // Create once so the simulation survives logout within this session.
+        if (adminScreen == null) {
+            adminScreen = new JPanel(new BorderLayout(0, 12));
+            adminScreen.setBackground(Color.decode("#EDEBDE"));
+
+            JTabbedPane tabs = new JTabbedPane();
+            tabs.addTab("Registration Requests", new AdminDashboardPanel());
+            tabs.addTab("GPU Monitor", new GpuMonitorPanel());
+
+            JButton logout = new JButton("Log out");
+            logout.addActionListener(event -> logoutAdministrator());
+            JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+            toolbar.setOpaque(false);
+            toolbar.add(new JLabel("Signed in as administrator"));
+            toolbar.add(logout);
+
+            adminScreen.add(toolbar, BorderLayout.NORTH);
+            adminScreen.add(tabs, BorderLayout.CENTER);
+            content.add(adminScreen, "admin");
+        }
+        screens.show(content, "admin");
+        getRootPane().setDefaultButton(null);
+        setMinimumSize(new Dimension(1000, 760));
+        setSize(1180, 850);
+        setLocationRelativeTo(null);
+    }
+
+    private void logoutAdministrator() {
+        username.setText("");
+        password.setText("");
+        newPassword.setText("");
+        showPassword.setSelected(false);
+        password.setEchoChar(passwordMask);
+        loginMessage.setText(" ");
+        screens.show(content, "login");
+        getRootPane().setDefaultButton(signIn);
+        setMinimumSize(new Dimension(720, 720));
+        setSize(920, 790);
+        setLocationRelativeTo(null);
+        username.requestFocusInWindow();
     }
 
     private void attemptRegistration() {
