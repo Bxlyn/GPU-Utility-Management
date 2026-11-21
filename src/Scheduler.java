@@ -125,6 +125,63 @@ public class Scheduler {
         }
     }
 
+
+    public Job cancelJob(int jobId, String cancelledBy,
+                        String reason) {
+
+        Job job = findJob(jobId);
+
+        if (job == null) {
+            throw new IllegalArgumentException("Job not found");
+        }
+
+        if (job.getStatus() != JobStatus.QUEUED &&
+            job.getStatus() != JobStatus.RUNNING) {
+            throw new IllegalStateException(
+                "Job cannot be cancelled"
+            );
+        }
+
+        if (cancelledBy == null || cancelledBy.trim().isEmpty() ||
+            reason == null || reason.trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                "Cancellation user and reason are required"
+            );
+        }
+
+        if (job.getStatus() == JobStatus.QUEUED) {
+
+            job.cancel(simulationTime, cancelledBy, reason);
+            waitingJobs.remove(job);
+
+        } else {
+
+            GPU assignedGpu = null;
+
+            for (GPU gpu : gpus) {
+                if (gpu.getCurrentJob() == job) {
+                    assignedGpu = gpu;
+                    break;
+                }
+            }
+
+            if (assignedGpu == null) {
+                throw new IllegalStateException(
+                    "Running job has no assigned GPU"
+                );
+            }
+
+            job.cancel(simulationTime, cancelledBy, reason);
+            assignedGpu.releaseJob();
+
+            // Immediately start the next waiting job
+            dispatchJobs();
+        }
+
+        return job;
+    }
+
+
     // Advance simulation clock by one minute
     public ArrayList<Job> advanceMinute() {
 
