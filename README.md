@@ -1,18 +1,57 @@
-## Getting Started
+# GPU Utilization Management System
 
-Welcome to the VS Code Java world. Here is a guideline to help you get started to write Java code in Visual Studio Code.
+A Java application developed for the **COSC230 Object-Oriented Programming** course at Khalifa University.
 
-## Folder Structure
+The system simulates GPU resource management, allowing students to request GPU processing time and administrators to manage accounts, jobs, and resource allocation.
 
-The workspace contains two folders by default, where:
+## Features
+- Student registration and administrator approval.
+- Student and administrator login.
+- GPU job submission and cancellation.
+- First Come First Served (FCFS) scheduling across four GPUs.
+- Simulated clock with an Advance Minute feature.
+- GPU time allowance tracking and utilization statistics.
+- Job history, queue positions, and predicted waiting times.
+- File-based saving and loading.
 
-- `src`: the folder to maintain sources
-- `lib`: the folder to maintain dependencies
+## Project Structure
 
-Meanwhile, the compiled output files will be generated in the `bin` folder by default.
+```text
+src/
+├── Main.java       # Application entry point
+├── model/          # User, Student, Job, GPU, etc.
+├── service/        # Scheduling and application logic
+├── dto/            # Dashboard and job information
+├── storage/        # File saving and loading
+└── ui/             # Java Swing interface
+```
 
-> If you want to customize the folder structure, open `.vscode/settings.json` and update the related settings there.
+## Requirements
 
-## Dependency Management
+- Java JDK 17 or later
+- Java Swing (included with the JDK)
 
-The `JAVA PROJECTS` view allows you to manage your dependencies. More details can be found [here](https://github.com/microsoft/vscode-java-dependency#manage-dependencies).
+## How to Run
+
+Open a terminal in the **project root folder**.
+
+Compile:
+
+```powershell
+javac -d bin src/Main.java src/model/*.java src/service/*.java src/dto/*.java src/storage/*.java src/ui/*.java
+```
+
+Run:
+
+```powershell
+java -cp bin Main
+```
+
+## Default Administrator Login
+
+- **Username:** `admin`
+- **Password:** `gpu2026`
+
+## Notes
+
+The application simulates GPU execution rather than using physical GPUs. Student accounts require administrator approval before submitting jobs. Simulation time advances manually, and application data can be saved and restored.
