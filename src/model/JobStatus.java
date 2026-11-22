@@ -2,6 +2,7 @@ package model;
 import java.io.Serializable;
 import java.io.ObjectStreamException;
 
+// Shared status values for the job lifecycle.
 public class JobStatus implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -17,6 +18,7 @@ public class JobStatus implements Serializable {
     }
 
 
+    // Restore the shared status objects so reference comparisons still work.
     private Object readResolve() throws ObjectStreamException {
         if ("Queued".equals(status)) {
             return QUEUED;

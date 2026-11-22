@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import model.Job;
 import model.JobStatus;
 
+// Job information formatted for the dashboard.
 public class JobDetails {
 
     private int jobId;
@@ -121,6 +122,7 @@ public class JobDetails {
         return status;
     }
 
+    // Unassigned jobs display N/A instead of a GPU number.
     public String getGpuId() {
         if (gpuId == -1) {
             return "N/A";

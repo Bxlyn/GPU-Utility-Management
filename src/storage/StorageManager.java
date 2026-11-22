@@ -5,6 +5,7 @@ import java.nio.file.*;
 
 import service.GPUManagementSystem;
 
+// Saves and restores the full simulation state.
 public class StorageManager {
 
     private static final String FILE_NAME = "gpu_data.dat";
@@ -20,6 +21,7 @@ public class StorageManager {
         }
 
         Path destination = Paths.get(FILE_NAME);
+        // Save to a temporary file before replacing the previous save.
         Path temporary = Paths.get(FILE_NAME + ".tmp");
 
         try {

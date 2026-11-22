@@ -6,7 +6,7 @@ import java.util.Arrays;
 import javax.swing.*;
 import javax.swing.border.*;
 
-/** Admin login is connected; student accounts still need a backend service. */
+/** Login and registration for both student and admin accounts. */
 public class LoginFrame extends JFrame implements ActionListener {
     private static final long serialVersionUID = 1L;
     private JPanel studentScreen;

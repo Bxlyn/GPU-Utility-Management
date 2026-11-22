@@ -1,4 +1,5 @@
 package model;
+// Student account with approval and GPU-minute balances.
 public class Student extends User {
     private String email;
     private String phone;
@@ -46,7 +47,7 @@ public class Student extends User {
         return allocatedMinutes - usedMinutes - reservedMinutes;
     }
     
-    //For Simulation purposes
+    // An approved student starts with 100 GPU minutes.
     public void approve() {
         if (!approved) {
             approved = true;

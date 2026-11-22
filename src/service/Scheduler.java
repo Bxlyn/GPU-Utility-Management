@@ -10,6 +10,7 @@ import model.JobStatus;
 
 import java.io.Serializable;
 
+// Runs the FCFS queue across four simulated GPUs.
 public class Scheduler implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -194,6 +195,7 @@ public class Scheduler implements Serializable {
 
 
     // Advance simulation clock by one minute
+    // Run one minute, then move queued jobs onto any GPUs that become free.
     public ArrayList<Job> advanceMinute() {
 
         ArrayList<Job> completedJobs = new ArrayList<>();

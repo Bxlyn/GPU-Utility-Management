@@ -6,6 +6,7 @@ import model.TaskSize;
 import java.awt.event.*;
 import javax.swing.*;
 
+// Collects job details and sends the request to the backend.
 public class SubmitJobDialog extends JDialog
         implements ActionListener {
 
@@ -138,6 +139,7 @@ public class SubmitJobDialog extends JDialog
         }
     }
 
+    // Check the form before asking the backend to submit the job.
     private void reviewJob() {
         String title = titleField.getText().trim();
         String appName = applicationField.getText().trim();

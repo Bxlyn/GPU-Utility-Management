@@ -17,6 +17,7 @@ import model.TaskSize;
 import model.TimeGrant;
 import storage.StorageManager;
 
+// Connects accounts, allowances, and job scheduling.
 public class GPUManagementSystem implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -25,6 +26,7 @@ public class GPUManagementSystem implements Serializable {
     private ArrayList<Student> students;
     private ArrayList<Student> pendingRequests;
     private ArrayList<Student> rejectedRequests;
+    // Login sessions are not saved, so users log in again after restart.
     private transient HashSet<String> loggedInStudents;
 
     private Scheduler scheduler;

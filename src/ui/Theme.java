@@ -14,6 +14,7 @@ public final class Theme {
 
     private Theme() { }
 
+    // Apply the same fonts and colors across Swing screens.
     public static void apply() {
         Font font = new Font("SansSerif", Font.PLAIN, 14);
         String[] keys = {"Label.font", "Button.font", "TextField.font",

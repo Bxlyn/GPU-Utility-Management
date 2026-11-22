@@ -11,6 +11,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.TableRowSorter;
 import java.util.regex.Pattern;
 
+// Shows a student's minutes and jobs from the shared system.
 public class StudentDashboardPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
@@ -85,6 +86,7 @@ public class StudentDashboardPanel extends JPanel {
         panel.add(value);
         return panel;
     }
+    // Job actions refresh the table and balances after a change.
     private JPanel createJobsPanel() {
         JPanel jobsPanel = new JPanel(new BorderLayout(0, 12));
         jobsPanel.setOpaque(false);

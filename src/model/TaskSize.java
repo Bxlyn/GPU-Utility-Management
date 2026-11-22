@@ -2,6 +2,7 @@ package model;
 import java.io.Serializable;
 import java.io.ObjectStreamException;
 
+// Allowed task sizes and their simulated durations.
 public class TaskSize implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -18,7 +19,7 @@ public class TaskSize implements Serializable {
         this.duration = duration;
     }
 
-    //Deserialization verification
+    // Reuse the predefined size objects when loading saved data.
     private Object readResolve() throws ObjectStreamException {
         if ("Small".equals(name) && duration == 5) {
             return SMALL;

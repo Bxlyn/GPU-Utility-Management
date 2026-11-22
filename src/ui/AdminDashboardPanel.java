@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 
+// Shows registration requests and lets admins review them.
 public class AdminDashboardPanel extends JPanel
         implements ActionListener {
 
@@ -157,6 +158,7 @@ public class AdminDashboardPanel extends JPanel
         refreshRequests();
     }
 
+    // Reload the request table after an approval or rejection.
     public void refreshRequests() {
         requestsModel.setRowCount(0);
         for (Student student : AppContext.get().getPendingRequests()) {

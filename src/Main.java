@@ -8,10 +8,12 @@ import javax.swing.*;
 
 public class Main {
     public static void main(String[] args) {
+        // Start the interface on Swing's event thread.
         SwingUtilities.invokeLater(() -> {
             Theme.apply();
             try {
                 boolean loadExisting = false;
+                // Offer to resume the last saved simulation.
                 if (AppContext.savedDataExists()) {
                     int answer = JOptionPane.showConfirmDialog(null,
                         "Saved GPU simulation found. Restore it?\n" +
@@ -44,6 +46,7 @@ public class Main {
                         ((Date) datePicker.getValue()).toInstant(), ZoneId.systemDefault());
                     LocalDateTime chosenTime = LocalDateTime.ofInstant(
                         ((Date) timePicker.getValue()).toInstant(), ZoneId.systemDefault());
+                    // Combine the chosen date and time into one simulation clock.
                     LocalDateTime start = LocalDateTime.of(
                         chosenDate.toLocalDate(), chosenTime.toLocalTime())
                         .withSecond(0).withNano(0);

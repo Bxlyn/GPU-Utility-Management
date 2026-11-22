@@ -142,6 +142,7 @@ public class GpuMonitorPanel extends JPanel {
         } catch (Exception ex) { showError(ex); }
     }
 
+    // Rebuild GPU and job displays from the latest simulation state.
     public void refreshData() {
         try {
             clock.setText("Simulation time: " + AppContext.get().getSimulationTime()

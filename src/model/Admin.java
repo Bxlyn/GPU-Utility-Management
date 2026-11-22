@@ -1,4 +1,5 @@
 package model;
+// Built-in administrator account.
 public class Admin extends User {
     private static final String ADMIN_USER = "admin";
     private static final String ADMIN_PASS = "gpu2026";

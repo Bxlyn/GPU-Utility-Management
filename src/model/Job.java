@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+// Holds a job's details, status, and execution times.
 public class Job implements Serializable {
     private static final long serialVersionUID = 1L;
 

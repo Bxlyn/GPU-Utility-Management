@@ -25,6 +25,7 @@ public final class AppContext {
         system = new GPUManagementSystem(initialTime);
     }
 
+    // Replace the shared system with the saved one.
     public static void load() throws IOException, ClassNotFoundException {
         system = GPUManagementSystem.loadData();
     }

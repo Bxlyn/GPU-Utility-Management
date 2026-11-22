@@ -1,6 +1,7 @@
 package model;
 import java.io.Serializable;
 
+// Tracks the job assigned to one GPU.
 public class GPU implements Serializable {
     private static final long serialVersionUID = 1L;
 

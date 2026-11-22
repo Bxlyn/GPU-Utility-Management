@@ -1,5 +1,6 @@
 package dto;
 
+// Summary values displayed on the admin dashboard.
 public class DashboardSummary {
 
     private int queuedJobs;

@@ -3,6 +3,7 @@ package ui;
 import java.time.LocalDateTime;
 import javax.swing.*;
 
+// Standalone launcher for the student dashboard.
 public class DashboardPreview {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
