@@ -1,6 +1,12 @@
 
 import java.time.LocalDateTime;
 
+import model.GPU;
+import model.Job;
+import model.Student;
+import model.TaskSize;
+import service.GPUManagementSystem;
+
 public class Main {
 
     public static void main(String[] args) {

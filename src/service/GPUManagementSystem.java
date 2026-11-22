@@ -1,9 +1,21 @@
+package service;
 import java.io.Serializable;
 import java.io.IOException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
+
+import dto.DashboardSummary;
+import dto.JobDetails;
+import model.Admin;
+import model.GPU;
+import model.Job;
+import model.JobStatus;
+import model.Student;
+import model.TaskSize;
+import model.TimeGrant;
+import storage.StorageManager;
 
 public class GPUManagementSystem implements Serializable {
     private static final long serialVersionUID = 1L;

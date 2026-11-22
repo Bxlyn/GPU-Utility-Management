@@ -1,7 +1,11 @@
+package dto;
 
 import java.time.LocalDateTime;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
+
+import model.Job;
+import model.JobStatus;
 
 public class JobDetails {
 

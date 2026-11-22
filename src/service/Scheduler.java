@@ -1,7 +1,13 @@
+package service;
 
 import java.time.LocalDateTime;
 import java.time.Duration;
 import java.util.ArrayList;
+
+import model.GPU;
+import model.Job;
+import model.JobStatus;
+
 import java.io.Serializable;
 
 public class Scheduler implements Serializable {
