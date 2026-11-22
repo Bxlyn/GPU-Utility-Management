@@ -503,8 +503,82 @@ public class GPUManagementSystem implements Serializable {
         return scheduler.getRemainingWait(jobId);
     }
 
+    public int getStudentAllocatedMinutes(String studentId) {
+        return requireStudent(studentId).getAllocatedMinutes();
+    }
+
+    public int getStudentUsedMinutes(String studentId) {
+        return requireStudent(studentId).getUsedMinutes();
+    }
+
+    public int getStudentReservedMinutes(String studentId) {
+        return requireStudent(studentId).getReservedMinutes();
+    }
+
+
+    /* DASHBOARD INFORMATION DISPLAY */
+
+    public DashboardSummary getDashboardSummary() {
+
+        requireAdmin();
+
+        int queued = 0;
+        int running = 0;
+        int completed = 0;
+        int cancelled = 0;
+
+        for (Job job : scheduler.getAllJobs()) {
+
+            if (job.getStatus() == JobStatus.QUEUED) {
+                queued++;
+            } else if (job.getStatus() == JobStatus.RUNNING) {
+                running++;
+            } else if (job.getStatus() == JobStatus.COMPLETED) {
+                completed++;
+            } else if (job.getStatus() == JobStatus.CANCELLED) {
+                cancelled++;
+            }
+        }
+
+        return new DashboardSummary(
+            queued,
+            running,
+            completed,
+            cancelled,
+            scheduler.getBusyGpuCount(),
+            scheduler.getAvailableGpuCount(),
+            scheduler.getUtilization()
+        );
+    }
+
+
+    public LocalDateTime getGpuExpectedFinish(int gpuId) {
+
+        requireAdmin();
+
+        for (GPU gpu : scheduler.getGpus()) {
+
+            if (gpu.getGpuId() == gpuId) {
+
+                if (gpu.isAvailable()) {
+                    return null;
+                }
+
+                return scheduler.getSimulationTime()
+                        .plusMinutes(
+                            gpu.getRemainingRuntime()
+                        );
+            }
+        }
+
+        throw new IllegalArgumentException(
+            "GPU not found"
+        );
+    }
+
+
     /* DATA RETRIEVAL PROCESS */
-    
+
     private void readObject(java.io.ObjectInputStream input)
             throws IOException, ClassNotFoundException {
 

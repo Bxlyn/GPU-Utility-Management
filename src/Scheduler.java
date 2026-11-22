@@ -12,6 +12,9 @@ public class Scheduler implements Serializable {
     private ArrayList<Job> allJobs;
     private ArrayList<Job> waitingJobs;
     private LocalDateTime simulationTime;
+    private long elapsedSimulationMinutes = 0;
+    private long totalBusyGpuMinutes = 0;
+
 
     // Constructor
     public Scheduler(LocalDateTime startTime) {
@@ -189,6 +192,19 @@ public class Scheduler implements Serializable {
 
         ArrayList<Job> completedJobs = new ArrayList<>();
 
+        // Count GPUs that are busy before advancing
+        int busyCount = 0;
+
+        for (GPU gpu : gpus) {
+            if (!gpu.isAvailable()) {
+                busyCount++;
+            }
+        }
+
+        totalBusyGpuMinutes += busyCount;
+        elapsedSimulationMinutes++;
+
+        // Advance the shared simulation clock
         simulationTime = simulationTime.plusMinutes(1);
 
         // Update running jobs
@@ -203,17 +219,20 @@ public class Scheduler implements Serializable {
                 if (job.getRemainingRuntime() == 0) {
 
                     job.complete(simulationTime);
+
                     completedJobs.add(job);
+
                     gpu.releaseJob();
                 }
             }
         }
 
-        // Start queued jobs on available GPUs
+        // Start waiting jobs on available GPUs
         dispatchJobs();
 
         return completedJobs;
     }
+
 
     // Search for a job by ID
     public Job findJob(int jobId) {
@@ -361,6 +380,43 @@ public class Scheduler implements Serializable {
             simulationTime, predictedStart
         ).toMinutes();
     }
+
+
+    public long getElapsedSimulationMinutes() {
+        return elapsedSimulationMinutes;
+    }
+
+    public long getTotalBusyGpuMinutes() {
+        return totalBusyGpuMinutes;
+    }
+
+    public double getUtilization() {
+
+        if (elapsedSimulationMinutes == 0) {
+            return -1;
+        }
+
+        return (totalBusyGpuMinutes * 100.0) /
+            (4.0 * elapsedSimulationMinutes);
+    }
+
+    public int getBusyGpuCount() {
+
+        int count = 0;
+
+        for (GPU gpu : gpus) {
+            if (!gpu.isAvailable()) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    public int getAvailableGpuCount() {
+        return 4 - getBusyGpuCount();
+    }
+
 
     // Display all GPU statuses
     public void displayGpus() {
