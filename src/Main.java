@@ -5,78 +5,111 @@ public class Main {
 
     public static void main(String[] args) {
 
-        LocalDateTime clock =
-            LocalDateTime.of(2026, 11, 20, 10, 0);
+        try {
+            // Create a new system
+            GPUManagementSystem system =
+                new GPUManagementSystem(
+                    LocalDateTime.of(2026, 11, 22, 10, 0)
+                );
 
-        // Create the scheduler
-        Scheduler scheduler = new Scheduler(clock);
+            // Register student
+            system.registerStudent(
+                "10001",
+                "pass123",
+                "Ali",
+                "ali@ku.ac.ae",
+                "0501234567"
+            );
 
-        // Create five jobs
-        Job job1 = new Job(
-            1, "10001", "Job 1",
-            "Python", "Task 1",
-            TaskSize.SMALL, clock
+            // Administrator approves student
+            system.loginAdmin("admin", "gpu2026");
+            system.approveStudent("10001");
+
+            // Student logs in
+            system.loginStudent("10001", "pass123");
+
+            // Submit five small jobs
+            for (int i = 1; i <= 5; i++) {
+                system.submitJob(
+                    "10001",
+                    "Job " + i,
+                    "Python",
+                    "GPU task " + i,
+                    TaskSize.SMALL
+                );
+            }
+
+            // Advance two minutes
+            system.advanceMinute();
+            system.advanceMinute();
+
+            System.out.println("=== BEFORE SAVING ===");
+
+            printState(system);
+
+            // Save data
+            system.saveData();
+            System.out.println("\nData saved successfully.");
+
+            // Simulate restarting by loading from file
+            system = GPUManagementSystem.loadData();
+
+            System.out.println("\n=== AFTER LOADING ===");
+
+            // Login again after loading
+            system.loginAdmin("admin", "gpu2026");
+
+            printState(system);
+
+            // Continue the simulation
+            for (int i = 0; i < 3; i++) {
+                system.advanceMinute();
+            }
+
+            System.out.println("\n=== AFTER 3 MORE MINUTES ===");
+
+            printState(system);
+
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public static void printState(
+            GPUManagementSystem system) {
+
+        System.out.println(
+            "Time: " + system.getSimulationTime()
         );
 
-        Job job2 = new Job(
-            2, "10002", "Job 2",
-            "TensorFlow", "Task 2",
-            TaskSize.SMALL, clock
-        );
-
-        Job job3 = new Job(
-            3, "10003", "Job 3",
-            "MATLAB", "Task 3",
-            TaskSize.SMALL, clock
-        );
-
-        Job job4 = new Job(
-            4, "10004", "Job 4",
-            "CUDA", "Task 4",
-            TaskSize.SMALL, clock
-        );
-
-        Job job5 = new Job(
-            5, "10005", "Job 5",
-            "PyTorch", "Task 5",
-            TaskSize.SMALL, clock
-        );
-
-        // Submit all five jobs
-        scheduler.submitJob(job1);
-        scheduler.submitJob(job2);
-        scheduler.submitJob(job3);
-        scheduler.submitJob(job4);
-        scheduler.submitJob(job5);
-
-        System.out.println("=== INITIAL GPU STATUS ===");
-        scheduler.displayGpus();
-
-        System.out.println("\nJob 5 Status: " +
-                           job5.getStatus());
-
-        System.out.println("Job 5 Queue Position: " +
-                           scheduler.getQueuePosition(5));
-
-        System.out.println("Job 5 Remaining Wait: " +
-                           scheduler.getRemainingWait(5) +
-                           " minutes");
-
-        // Advance five simulated minutes
-        for (int i = 0; i < 5; i++) {
-            scheduler.advanceMinute();
+        for (GPU gpu : system.getGpus()) {
+            System.out.println(gpu);
         }
 
-        System.out.println("\n=== AFTER 5 MINUTES ===");
-        scheduler.displayGpus();
+        for (Job job : system.getAllJobs()) {
+            System.out.println(
+                "Job " + job.getJobId() +
+                ": " + job.getStatus()
+            );
+        }
 
-        System.out.println("\nJob 1 Status: " +
-                           job1.getStatus());
+        Student student = system.findStudent("10001");
 
-        System.out.println("Job 5 Status: " +
-                           job5.getStatus());
+        System.out.println(
+            "Allocated: " + student.getAllocatedMinutes()
+        );
 
-        System.out.println("Simulation Time: " +
-                           scheduler.getSimulationTime());
+        System.out.println(
+            "Used: " + student.getUsedMinutes()
+        );
+
+        System.out.println(
+            "Reserved: " + student.getReservedMinutes()
+        );
+
+        System.out.println(
+            "Available: " + student.getAvailableMinutes()
+        );
     }
 }

@@ -1,19 +1,22 @@
+import java.io.Serializable;
+import java.io.IOException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-public class GPUManagementSystem {
+public class GPUManagementSystem implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     // Attributes
     private Admin admin;
     private ArrayList<Student> students;
     private ArrayList<Student> pendingRequests;
     private ArrayList<Student> rejectedRequests;
-    private HashSet<String> loggedInStudents;
+    private transient HashSet<String> loggedInStudents;
 
     private Scheduler scheduler;
-    private boolean adminLoggedIn;
+    private transient boolean adminLoggedIn;
     private int nextJobId;
 
     // Constructor
@@ -498,5 +501,30 @@ public class GPUManagementSystem {
     public long getRemainingWait(int jobId) {
         requireAdmin();
         return scheduler.getRemainingWait(jobId);
+    }
+
+    /* DATA RETRIEVAL PROCESS */
+    
+    private void readObject(java.io.ObjectInputStream input)
+            throws IOException, ClassNotFoundException {
+
+        input.defaultReadObject();
+
+        // Everyone must log in again after restarting
+        loggedInStudents = new HashSet<>();
+        adminLoggedIn = false;
+    }
+
+
+    // Save current application data
+    public void saveData() throws IOException {
+        StorageManager.saveData(this);
+    }
+
+    // Load saved application data
+    public static GPUManagementSystem loadData()
+            throws IOException, ClassNotFoundException {
+
+        return StorageManager.loadData();
     }
 }

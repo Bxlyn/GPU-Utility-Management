@@ -2,8 +2,10 @@
 import java.time.LocalDateTime;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.io.Serializable;
 
-public class Scheduler {
+public class Scheduler implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     // Attributes
     private GPU[] gpus;

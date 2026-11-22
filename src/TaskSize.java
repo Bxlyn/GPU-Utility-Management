@@ -1,5 +1,8 @@
+import java.io.Serializable;
+import java.io.ObjectStreamException;
 
-public class TaskSize {
+public class TaskSize implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private String name;
     private int duration;
@@ -13,6 +16,27 @@ public class TaskSize {
         this.name = name;
         this.duration = duration;
     }
+
+    //Deserialization verification
+    private Object readResolve() throws ObjectStreamException {
+        if ("Small".equals(name) && duration == 5) {
+            return SMALL;
+        }
+        if ("Medium".equals(name) && duration == 15) {
+            return MEDIUM;
+        }
+        if ("Large".equals(name) && duration == 30) {
+            return LARGE;
+        }
+        if ("Very Large".equals(name) && duration == 60) {
+            return VERY_LARGE;
+        }
+
+        throw new java.io.InvalidObjectException(
+            "Unknown task size"
+        );
+    }
+
 
     public String getName() {
         return name;

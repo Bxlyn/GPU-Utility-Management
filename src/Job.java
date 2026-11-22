@@ -1,7 +1,9 @@
+import java.io.Serializable;
 
 import java.time.LocalDateTime;
 
-public class Job {
+public class Job implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     // Attributes
     private int jobId;

@@ -1,5 +1,7 @@
+import java.io.Serializable;
 
-public class GPU {
+public class GPU implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     // Attributes
     private int gpuId;
