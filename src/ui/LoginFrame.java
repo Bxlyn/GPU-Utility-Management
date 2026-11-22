@@ -1,6 +1,5 @@
 package ui;
 
-import backend.Admin;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
@@ -10,7 +9,8 @@ import javax.swing.border.*;
 /** Admin login is connected; student accounts still need a backend service. */
 public class LoginFrame extends JFrame implements ActionListener {
     private static final long serialVersionUID = 1L;
-    private final Admin administrator = new Admin();
+    private JPanel studentScreen;
+    private String activeStudentId;
     private JPanel adminScreen;
 
     private final CardLayout screens = new CardLayout();
@@ -152,24 +152,52 @@ public class LoginFrame extends JFrame implements ActionListener {
                 return;
             }
             String enteredUsername = username.getText().trim();
-            if (!administrator.getUsername().equals(enteredUsername)) {
-                error(loginMessage, "Student login is not connected yet.");
-                return;
-            }
-            if (!administrator.checkPassword(new String(enteredPassword))) {
-                error(loginMessage, "Incorrect administrator password.");
+            boolean isAdmin = "admin".equals(enteredUsername);
+            boolean success = isAdmin
+                ? AppContext.get().loginAdmin(enteredUsername, new String(enteredPassword))
+                : AppContext.get().loginStudent(enteredUsername, new String(enteredPassword));
+            if (!success) {
+                error(loginMessage, "Incorrect credentials or account not approved.");
                 return;
             }
             password.setText("");
             loginMessage.setText(" ");
-            openAdminDashboard();
+            if (isAdmin) openAdminDashboard();
+            else openStudentDashboard(enteredUsername);
         } finally {
             Arrays.fill(enteredPassword, '\0');
         }
     }
 
+    private void openStudentDashboard(String studentId) {
+        activeStudentId = studentId;
+        if (studentScreen != null) content.remove(studentScreen);
+        studentScreen = new JPanel(new BorderLayout());
+        studentScreen.add(new StudentDashboardPanel(studentId), BorderLayout.CENTER);
+        JPanel top = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton logout = new JButton("Log out");
+        logout.addActionListener(e -> logoutStudent());
+        top.add(logout);
+        studentScreen.add(top, BorderLayout.NORTH);
+        content.add(studentScreen, "student");
+        screens.show(content, "student");
+        setMinimumSize(new Dimension(940, 640));
+        setSize(1130, 800);
+        setLocationRelativeTo(null);
+    }
+
+    private void logoutStudent() {
+        if (activeStudentId != null) {
+            AppContext.get().logoutStudent(activeStudentId);
+            activeStudentId = null;
+        }
+        showLoginScreen();
+    }
+
     private void openAdminDashboard() {
-        // Create once so the simulation survives logout within this session.
+        // Rebuild panels after each login; the shared backend data is retained.
+        if (adminScreen != null) content.remove(adminScreen);
+        adminScreen = null;
         if (adminScreen == null) {
             adminScreen = new JPanel(new BorderLayout(0, 12));
             adminScreen.setBackground(Color.decode("#EDEBDE"));
@@ -197,6 +225,11 @@ public class LoginFrame extends JFrame implements ActionListener {
     }
 
     private void logoutAdministrator() {
+        AppContext.get().logoutAdmin();
+        showLoginScreen();
+    }
+
+    private void showLoginScreen() {
         username.setText("");
         password.setText("");
         newPassword.setText("");
@@ -224,11 +257,23 @@ public class LoginFrame extends JFrame implements ActionListener {
                 error(registrationMessage, "Enter an email such as name@example.com.");
                 return;
             }
-            // BACK-END CONNECTION: pass the five values to registerStudent(...).
-            // The back end must check duplicates and save a pending request.
-            // Only show a success message after that method succeeds.
-            registrationMessage.setForeground(Theme.MUTED);
-            registrationMessage.setText("Form ready. No request saved; back end not connected.");
+            try {
+                AppContext.get().registerStudent(
+                    universityId.getText().trim(),
+                    new String(enteredPassword),
+                    studentName.getText().trim(),
+                    email.getText().trim(),
+                    phone.getText().trim());
+                AppContext.save();
+                JOptionPane.showMessageDialog(this,
+                    "Registration submitted. An administrator must approve your account.");
+                universityId.setText(""); studentName.setText("");
+                email.setText(""); phone.setText(""); newPassword.setText("");
+                screens.show(content, "login");
+                getRootPane().setDefaultButton(signIn);
+            } catch (Exception ex) {
+                error(registrationMessage, ex.getMessage());
+            }
         } finally {
             Arrays.fill(enteredPassword, '\0');
         }

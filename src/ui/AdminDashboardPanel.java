@@ -1,6 +1,7 @@
 package ui;
 
 import java.awt.*;
+import model.Student;
 import java.awt.event.*;
 import java.util.regex.Pattern;
 import javax.swing.*;
@@ -36,7 +37,7 @@ public class AdminDashboardPanel extends JPanel
         title.setForeground(maroon);
 
         JLabel subtitle = new JLabel(
-                "Registration requests and student search — sample data");
+                "Registration requests and approved students — live data");
         subtitle.setForeground(ink);
 
         heading.add(title);
@@ -47,19 +48,7 @@ public class AdminDashboardPanel extends JPanel
             "University ID", "Name", "Email", "Phone", "Status"
         };
 
-        Object[][] sampleRequests = {
-            {"10001", "Ali Hassan", "ali@example.com",
-                "0501234567", "Pending"},
-            {"10002", "Sara Ahmed", "sara@example.com",
-                "0502345678", "Pending"},
-            {"10003", "Omar Khalid", "omar@example.com",
-                "0503456789", "Approved"},
-            {"10004", "Noor Salem", "noor@example.com",
-                "0504567890", "Rejected"}
-        };
-
-        requestsModel = new DefaultTableModel(
-                sampleRequests, columns) {
+        requestsModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -156,7 +145,7 @@ public class AdminDashboardPanel extends JPanel
         buttons.add(approveButton);
 
         JLabel note = new JLabel(
-                "Preview only. Account statuses and allowances are unchanged.");
+                "Changes are saved to the shared application state.");
         note.setForeground(ink);
 
         JPanel bottom = new JPanel(new BorderLayout(0, 12));
@@ -165,6 +154,26 @@ public class AdminDashboardPanel extends JPanel
         bottom.add(note, BorderLayout.SOUTH);
 
         add(bottom, BorderLayout.SOUTH);
+        refreshRequests();
+    }
+
+    public void refreshRequests() {
+        requestsModel.setRowCount(0);
+        for (Student student : AppContext.get().getPendingRequests()) {
+            addRequestRow(student, "Pending");
+        }
+        for (Student student : AppContext.get().getStudents()) {
+            addRequestRow(student, "Approved");
+        }
+        for (Student student : AppContext.get().getRejectedRequests()) {
+            addRequestRow(student, "Rejected");
+        }
+    }
+
+    private void addRequestRow(Student s, String status) {
+        requestsModel.addRow(new Object[] {
+            s.getUsername(), s.getName(), s.getEmail(), s.getPhone(), status
+        });
     }
 
     @Override
@@ -222,140 +231,60 @@ public class AdminDashboardPanel extends JPanel
 
     private void previewApproval(String studentId) {
         JTextField minutesField = new JTextField("100", 10);
-
-        Object[] message = {
-            "University ID: " + studentId,
-            "Initial allowance in GPU minutes:",
-            minutesField,
-            "Preview only. This will not activate the account."
-        };
-
-        while (true) {
-            int choice = JOptionPane.showConfirmDialog(
-                    this,
-                    message,
-                    "Review approval",
-                    JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.QUESTION_MESSAGE);
-
-            if (choice != JOptionPane.OK_OPTION) {
-                return;
-            }
-
-            int minutes;
-
-            try {
-                minutes = Integer.parseInt(
-                        minutesField.getText().trim());
-
-                if (minutes < 0) {
-                    throw new NumberFormatException();
-                }
-            } catch (NumberFormatException exception) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Enter a whole number of zero or more.",
-                        "Invalid allowance",
-                        JOptionPane.WARNING_MESSAGE);
-                continue;
-            }
-
-            // Later, call the backend approval method here.
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Approval preview for student " + studentId
-                    + "\nInitial allowance: " + minutes + " minutes"
-                    + "\n\nNo account or allowance has been changed.",
-                    "Preview only",
-                    JOptionPane.INFORMATION_MESSAGE);
-            return;
+        Object[] message = { "Student: " + studentId,
+            "Initial allowance (minutes):", minutesField };
+        int choice = JOptionPane.showConfirmDialog(this, message,
+            "Approve student", JOptionPane.OK_CANCEL_OPTION);
+        if (choice != JOptionPane.OK_OPTION) return;
+        try {
+            int minutes = Integer.parseInt(minutesField.getText().trim());
+            if (minutes < 0) throw new NumberFormatException();
+            AppContext.get().approveStudent(studentId);
+            AppContext.get().adjustAllowance(studentId, minutes);
+            AppContext.save();
+            refreshRequests();
+            JOptionPane.showMessageDialog(this, "Student approved: " + studentId);
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Enter a non-negative whole number.");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Approval failed: " + ex.getMessage());
         }
     }
 
     private void previewRejection(String studentId) {
-        int choice = JOptionPane.showConfirmDialog(
-                this,
-                "Review rejection of student " + studentId + "?"
-                + "\nPreview only. The request will remain unchanged.",
-                "Review rejection",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE);
-
-        if (choice == JOptionPane.YES_OPTION) {
-            // Later, call the backend rejection method here.
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Rejection preview checked."
-                    + "\nNo request has been changed.",
-                    "Preview only",
-                    JOptionPane.INFORMATION_MESSAGE);
+        int choice = JOptionPane.showConfirmDialog(this,
+            "Reject request for " + studentId + "?",
+            "Reject request", JOptionPane.YES_NO_OPTION);
+        if (choice != JOptionPane.YES_OPTION) return;
+        try {
+            AppContext.get().rejectStudent(studentId);
+            AppContext.save();
+            refreshRequests();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Rejection failed: " + ex.getMessage());
         }
     }
 
     private void previewGrant(String studentId) {
         JTextField minutesField = new JTextField(10);
         JTextField reasonField = new JTextField(25);
-
-        Object[] message = {
-            "University ID: " + studentId,
-            "Extra GPU minutes:",
-            minutesField,
-            "Reason:",
-            reasonField,
-            "Preview only. The allowance will remain unchanged."
-        };
-
-        while (true) {
-            int choice = JOptionPane.showConfirmDialog(
-                    this,
-                    message,
-                    "Grant minutes preview",
-                    JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.QUESTION_MESSAGE);
-
-            if (choice != JOptionPane.OK_OPTION) {
-                return;
-            }
-
-            int minutes;
-
-            try {
-                minutes = Integer.parseInt(
-                        minutesField.getText().trim());
-
-                if (minutes <= 0) {
-                    throw new NumberFormatException();
-                }
-            } catch (NumberFormatException exception) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Enter a positive whole number of minutes.",
-                        "Invalid minutes",
-                        JOptionPane.WARNING_MESSAGE);
-                continue;
-            }
-
+        Object[] message = {"Student: " + studentId,
+            "Additional GPU minutes:", minutesField,
+            "Reason:", reasonField};
+        int choice = JOptionPane.showConfirmDialog(this, message,
+            "Grant GPU minutes", JOptionPane.OK_CANCEL_OPTION);
+        if (choice != JOptionPane.OK_OPTION) return;
+        try {
+            int minutes = Integer.parseInt(minutesField.getText().trim());
             String reason = reasonField.getText().trim();
-
-            if (reason.isEmpty()) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Enter a reason for granting extra minutes.",
-                        "Missing reason",
-                        JOptionPane.WARNING_MESSAGE);
-                continue;
-            }
-
-            // Later, call the backend grant method here.
-            JOptionPane.showMessageDialog(
-                    this,
-                    "University ID: " + studentId
-                    + "\nExtra minutes: " + minutes
-                    + "\nReason: " + reason
-                    + "\n\nPreview only. No allowance has been changed.",
-                    "Grant preview",
-                    JOptionPane.INFORMATION_MESSAGE);
-            return;
+            AppContext.get().grantExtraTime(studentId, minutes, reason);
+            AppContext.save();
+            refreshRequests();
+            JOptionPane.showMessageDialog(this, "Granted " + minutes + " minutes to " + studentId);
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Enter a positive whole number.");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Grant failed: " + ex.getMessage());
         }
     }
 }

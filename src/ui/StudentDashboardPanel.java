@@ -1,6 +1,9 @@
 package ui;
 
 import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
+import dto.JobDetails;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.event.DocumentEvent;
@@ -15,8 +18,12 @@ public class StudentDashboardPanel extends JPanel {
     private final Color cotton = Color.decode("#EDEBDE");
     private final Color maroon = Color.decode("#630102");
     private final Color ink = Color.decode("#1B1716");
+    private final String studentId;
+    private final Map<String, JLabel> balanceLabels = new HashMap<>();
+    private DefaultTableModel jobsModel;
 
-    public StudentDashboardPanel() {
+    public StudentDashboardPanel(String studentId) {
+        this.studentId = studentId;
         setLayout(new BorderLayout(20, 20));
         setBackground(cotton);
         setBorder(BorderFactory.createEmptyBorder(24, 24, 24, 24));
@@ -30,21 +37,21 @@ public class StudentDashboardPanel extends JPanel {
         title.setForeground(maroon);
 
         JLabel subtitle = new JLabel(
-                "Student dashboard preview — sample data");
+                "My GPU jobs and allowance — live data");
         subtitle.setFont(new Font("SansSerif", Font.PLAIN, 14));
         subtitle.setForeground(ink);
 
         heading.add(title);
         heading.add(subtitle);
 
-        // Sample balances: 100 - 20 - 30 = 50 available minutes.
+        // Initial placeholders are replaced by refreshData().
         JPanel balances = new JPanel(new GridLayout(1, 4, 16, 0));
         balances.setOpaque(false);
 
-        balances.add(createBalance("Allocated", 100));
-        balances.add(createBalance("Used", 20));
-        balances.add(createBalance("Reserved", 30));
-        balances.add(createBalance("Available", 50));
+        balances.add(createBalance("Allocated", 0));
+        balances.add(createBalance("Used", 0));
+        balances.add(createBalance("Reserved", 0));
+        balances.add(createBalance("Available", 0));
 
         JPanel top = new JPanel(new BorderLayout(0, 24));
         top.setOpaque(false);
@@ -54,6 +61,7 @@ public class StudentDashboardPanel extends JPanel {
         add(top, BorderLayout.NORTH);
 
         add(createJobsPanel(), BorderLayout.CENTER);
+        refreshData();
     }
         
 
@@ -69,6 +77,7 @@ public class StudentDashboardPanel extends JPanel {
         name.setForeground(ink);
 
         JLabel value = new JLabel(minutes + " min");
+        balanceLabels.put(label, value);
         value.setFont(new Font("SansSerif", Font.BOLD, 22));
         value.setForeground(maroon);
 
@@ -95,7 +104,8 @@ public class StudentDashboardPanel extends JPanel {
                 Window owner = SwingUtilities.getWindowAncestor(
                         StudentDashboardPanel.this);
 
-                SubmitJobDialog dialog = new SubmitJobDialog(owner);
+                SubmitJobDialog dialog = new SubmitJobDialog(
+                    owner, studentId, StudentDashboardPanel.this::refreshData);
                 dialog.setVisible(true);
             }
         });
@@ -128,18 +138,7 @@ public class StudentDashboardPanel extends JPanel {
             "GPU", "Duration (min)", "Wait (min)"
         };
 
-        // Preview records for one student.
-        // Completed durations total 20; queued reservations total 30.
-        Object[][] sampleJobs = {
-            {1, "Image classification", "Python", "Completed",
-                "GPU 1", 15, 0},
-            {2, "Matrix calculation", "MATLAB", "Completed",
-                "GPU 2", 5, 0},
-            {3, "Model training", "PyTorch", "Queued",
-                "Not assigned", 30, 10},
-            {4, "Image processing", "Python", "Cancelled",
-                "Not assigned", 5, "-"}
-        };
+        Object[][] sampleJobs = new Object[0][columns.length];
 
         DefaultTableModel model = new DefaultTableModel(
                 sampleJobs, columns) {
@@ -150,6 +149,7 @@ public class StudentDashboardPanel extends JPanel {
             }
         };
 
+        jobsModel = model;
         JTable jobsTable = new JTable(model);
         TableRowSorter<DefaultTableModel> sorter =
                 new TableRowSorter<>(model);
@@ -219,7 +219,7 @@ public class StudentDashboardPanel extends JPanel {
         jobsPanel.add(scrollPane, BorderLayout.CENTER);
 
         JLabel note = new JLabel(
-                "Sample data only. Wait shows remaining wait for queued jobs.");
+                "Wait shows predicted remaining waiting time for queued jobs.");
         note.setFont(new Font("SansSerif", Font.PLAIN, 12));
         note.setForeground(ink);
         JButton detailsButton = new JButton("View details");
@@ -244,16 +244,14 @@ public class StudentDashboardPanel extends JPanel {
                 // Find the original data row after filtering or sorting.
                 int modelRow = jobsTable.convertRowIndexToModel(selectedRow);
 
-                StringBuilder details = new StringBuilder();
-
-                for (int column = 0; column < model.getColumnCount(); column++) {
-                    details.append(model.getColumnName(column))
-                           .append(": ")
-                           .append(model.getValueAt(modelRow, column))
-                           .append("\n");
-                }
-
-                details.append("\nSample data only.");
+                 int jobId = ((Number) model.getValueAt(modelRow, 0)).intValue();
+                 StringBuilder details = new StringBuilder();
+                 for (JobDetails item : AppContext.get().getStudentJobDetails(studentId)) {
+                     if (item.getJobId() == jobId) {
+                         details.append(item.toString());
+                         break;
+                     }
+                 }
 
                 JTextArea detailsArea = new JTextArea(details.toString());
                 detailsArea.setEditable(false);
@@ -324,7 +322,7 @@ public class StudentDashboardPanel extends JPanel {
                     "The full reservation is released on cancellation.",
                     "Enter a cancellation reason:",
                     new JScrollPane(reasonField),
-                    "Preview only: this will not cancel the job."
+                    "Cancellation will release the job reservation."
                 };
 
                 while (true) {
@@ -348,13 +346,17 @@ public class StudentDashboardPanel extends JPanel {
                         continue;
                     }
 
-                    // Later, pass the job ID and reason to the backend.
-                    JOptionPane.showMessageDialog(
-                            StudentDashboardPanel.this,
-                            "Cancellation preview checked for job " + jobId
-                            + ".\nNo job or balance has been changed.",
-                            "Preview only",
-                            JOptionPane.INFORMATION_MESSAGE);
+                    try {
+                        AppContext.get().cancelStudentJob(studentId,
+                            ((Number) jobId).intValue(), reasonField.getText().trim());
+                        AppContext.save();
+                        refreshData();
+                        JOptionPane.showMessageDialog(StudentDashboardPanel.this,
+                            "Job " + jobId + " cancelled.");
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(StudentDashboardPanel.this,
+                            "Cancellation failed: " + ex.getMessage());
+                    }
                     return;
                 }
             }
@@ -372,5 +374,30 @@ public class StudentDashboardPanel extends JPanel {
         
 
         return jobsPanel;
+    }
+    // Re-read live balances and job records after every action.
+    public void refreshData() {
+        try {
+            balanceLabels.get("Allocated").setText(
+                AppContext.get().getStudentAllocatedMinutes(studentId) + " min");
+            balanceLabels.get("Used").setText(
+                AppContext.get().getStudentUsedMinutes(studentId) + " min");
+            balanceLabels.get("Reserved").setText(
+                AppContext.get().getStudentReservedMinutes(studentId) + " min");
+            balanceLabels.get("Available").setText(
+                AppContext.get().getAvailableMinutes(studentId) + " min");
+
+            jobsModel.setRowCount(0);
+            for (JobDetails job : AppContext.get().getStudentJobDetails(studentId)) {
+                jobsModel.addRow(new Object[] {
+                    job.getJobId(), job.getTitle(), job.getApplicationName(),
+                    job.getStatus(), job.getGpuId(), job.getDuration(),
+                    "Queued".equals(job.getStatus()) ? job.getRemainingWait() : "N/A"
+                });
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                "Could not refresh student records: " + ex.getMessage());
+        }
     }
 }

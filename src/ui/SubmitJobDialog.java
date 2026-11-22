@@ -1,6 +1,8 @@
 package ui;
 
 import java.awt.*;
+import model.Job;
+import model.TaskSize;
 import java.awt.event.*;
 import javax.swing.*;
 
@@ -21,13 +23,17 @@ public class SubmitJobDialog extends JDialog
             new String[] {"Small", "Medium", "Large", "Very large"});
 
     private final int[] durations = {5, 15, 30, 60};
+    private final String studentId;
+    private final Runnable onSubmitted;
 
     private final JLabel durationLabel = new JLabel("Duration: 5 minutes");
     private final JButton reviewButton = new JButton("Review job");
     private final JButton cancelButton = new JButton("Cancel");
 
-    public SubmitJobDialog(Window owner) {
+    public SubmitJobDialog(Window owner, String studentId, Runnable onSubmitted) {
         super(owner, "Submit a job", ModalityType.APPLICATION_MODAL);
+        this.studentId = studentId;
+        this.onSubmitted = onSubmitted;
 
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
@@ -71,7 +77,7 @@ public class SubmitJobDialog extends JDialog
         bottom.setOpaque(false);
 
         JLabel note = new JLabel(
-                "Preview only — jobs are not submitted yet.");
+                "Submitting reserves the full duration immediately.");
         note.setForeground(ink);
         bottom.add(note, BorderLayout.NORTH);
 
@@ -133,33 +139,36 @@ public class SubmitJobDialog extends JDialog
     }
 
     private void reviewJob() {
-        if (titleField.getText().trim().isEmpty()
-                || applicationField.getText().trim().isEmpty()
-                || descriptionField.getText().trim().isEmpty()) {
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Enter a title, application name, and description.",
-                    "Missing information",
-                    JOptionPane.WARNING_MESSAGE);
+        String title = titleField.getText().trim();
+        String appName = applicationField.getText().trim();
+        String description = descriptionField.getText().trim();
+        if (title.isEmpty() || appName.isEmpty() || description.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Enter a title, application name, and description.");
             return;
         }
 
-        int minutes = durations[sizeBox.getSelectedIndex()];
-
-        String summary =
-                "Title: " + titleField.getText().trim()
-                + "\nApplication: " + applicationField.getText().trim()
-                + "\nTask size: " + sizeBox.getSelectedItem()
-                + "\nDuration: " + minutes + " GPU minutes"
-                + "\n\nPreview only. No job has been submitted"
-                + "\nand no allowance has been reserved.";
-
-        // Later, submission must go through the backend's validation.
-        JOptionPane.showMessageDialog(
-                this,
-                summary,
-                "Review job",
-                JOptionPane.INFORMATION_MESSAGE);
+        int i = sizeBox.getSelectedIndex();
+        TaskSize size = i == 0 ? TaskSize.SMALL
+            : i == 1 ? TaskSize.MEDIUM
+            : i == 2 ? TaskSize.LARGE : TaskSize.VERY_LARGE;
+        int answer = JOptionPane.showConfirmDialog(this,
+            "Submit this job?\nTitle: " + title + "\nApplication: " + appName
+            + "\nTask size: " + size + "\nDuration: " + size.getDuration()
+            + " GPU minutes", "Confirm job", JOptionPane.OK_CANCEL_OPTION);
+        if (answer != JOptionPane.OK_OPTION) return;
+        try {
+            Job job = AppContext.get().submitJob(
+                studentId, title, appName, description, size);
+            AppContext.save();
+            JOptionPane.showMessageDialog(this,
+                "Job " + job.getJobId() + " submitted successfully.");
+            if (onSubmitted != null) onSubmitted.run();
+            dispose();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                "Could not submit job: " + ex.getMessage(),
+                "Submission failed", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
