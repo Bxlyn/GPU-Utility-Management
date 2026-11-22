@@ -29,3 +29,7 @@ Thumbs.db
 *.log
 *.tmp
 *.bak
+
+# work designation files
+*.assigned_work_bilal
+*.assgined_work_hamza
