@@ -1,7 +1,12 @@
-public class User {
+package model;
+import java.io.Serializable;
+
+abstract class User implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String username;
     private String password;
     private String name;
+    
 
     public User(String username, String password, String name) {
         this.username = username;
