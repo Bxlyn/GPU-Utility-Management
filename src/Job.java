@@ -1,6 +1,7 @@
 import java.io.Serializable;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class Job implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -267,22 +268,41 @@ public class Job implements Serializable {
     }
 
     // Display job information
+    
     @Override
     public String toString() {
 
+        DateTimeFormatter format =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
         return "Job ID: " + jobId +
-               "\nStudent ID: " + studentId +
-               "\nTitle: " + title +
-               "\nApplication: " + applicationName +
-               "\nDescription: " + description +
-               "\nTask Size: " + taskSize +
-               "\nWorkload Units: " + workloadUnits +
-               "\nDuration: " + estimatedDuration +
-               "\nRemaining Runtime: " + remainingRuntime +
-               "\nStatus: " + status +
-               "\nAssigned GPU: " + assignedGpuId +
-               "\nSubmission Time: " + submissionTime +
-               "\nStart Time: " + startTime +
-               "\nFinish Time: " + finishTime;
+            "\nStudent ID: " + studentId +
+            "\nTitle: " + title +
+            "\nApplication: " + applicationName +
+            "\nDescription: " + description +
+            "\nTask Size: " + taskSize +
+            "\nWorkload Units: " + workloadUnits +
+            "\nDuration: " + estimatedDuration +
+            "\nRemaining Runtime: " + remainingRuntime +
+            "\nStatus: " + status +
+            "\nAssigned GPU: " +
+                (assignedGpuId == -1 ? "N/A" : assignedGpuId) +
+            "\nSubmission Time: " +
+                submissionTime.format(format) +
+            "\nStart Time: " +
+                (startTime == null ? "N/A" :
+                    startTime.format(format)) +
+            "\nFinish Time: " +
+                (finishTime == null ? "N/A" :
+                    finishTime.format(format)) +
+            "\nCancellation Time: " +
+                (cancellationTime == null ? "N/A" :
+                    cancellationTime.format(format)) +
+            "\nCancelled By: " +
+                (cancelledBy == null ? "N/A" : cancelledBy) +
+            "\nCancellation Reason: " +
+                (cancellationReason == null ?
+                    "N/A" : cancellationReason);
     }
+
 }

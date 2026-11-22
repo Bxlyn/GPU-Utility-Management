@@ -93,7 +93,7 @@ public class GPUManagementSystem implements Serializable {
         
 
         validateRegistration(studentId, password, name, email, phone);
-        
+
         if (studentId == null || studentId.trim().isEmpty() ||
             password == null || password.trim().isEmpty() ||
             name == null || name.trim().isEmpty() ||
@@ -612,6 +612,48 @@ public ArrayList<JobDetails> getAllJobDetails() {
         return requireStudent(studentId).getReservedMinutes();
     }
 
+    // Administrator: formatted GPU finish time
+    public String getGpuExpectedFinishText(int gpuId) {
+
+        requireAdmin();
+
+        return formatDateTime(
+            getGpuExpectedFinish(gpuId)
+        );
+    }
+
+    // Administrator: formatted predicted start
+    public String getPredictedStartText(int jobId) {
+
+        requireAdmin();
+
+        return formatDateTime(
+            scheduler.getPredictedStart(jobId)
+        );
+    }
+
+    // Administrator: formatted predicted finish
+    public String getPredictedFinishText(int jobId) {
+
+        requireAdmin();
+
+        return formatDateTime(
+            scheduler.getPredictedFinish(jobId)
+        );
+    }
+
+    private String formatDateTime(LocalDateTime time) {
+
+        if (time == null) {
+            return "N/A";
+        }
+
+        return time.format(
+            java.time.format.DateTimeFormatter.ofPattern(
+                "dd/MM/yyyy HH:mm"
+            )
+        );
+    }
 
     /* DASHBOARD INFORMATION DISPLAY */
 
