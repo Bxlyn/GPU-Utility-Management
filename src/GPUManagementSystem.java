@@ -18,6 +18,7 @@ public class GPUManagementSystem implements Serializable {
     private Scheduler scheduler;
     private transient boolean adminLoggedIn;
     private int nextJobId;
+    private ArrayList<TimeGrant> timeGrants;
 
     // Constructor
     public GPUManagementSystem(LocalDateTime startTime) {
@@ -38,6 +39,7 @@ public class GPUManagementSystem implements Serializable {
         scheduler = new Scheduler(startTime);
         adminLoggedIn = false;
         nextJobId = 1;
+        timeGrants = new ArrayList<>();
     }
 
     // Find an approved student by university ID
@@ -88,7 +90,10 @@ public class GPUManagementSystem implements Serializable {
             String name,
             String email,
             String phone) {
+        
 
+        validateRegistration(studentId, password, name, email, phone);
+        
         if (studentId == null || studentId.trim().isEmpty() ||
             password == null || password.trim().isEmpty() ||
             name == null || name.trim().isEmpty() ||
@@ -222,13 +227,14 @@ public class GPUManagementSystem implements Serializable {
     }
 
     // Grant additional GPU minutes
-    public void grantExtraTime(
-            String studentId, int minutes, String reason) {
+    public void grantExtraTime(String studentId,
+                            int minutes, String reason) {
 
         requireAdmin();
 
         if (minutes <= 0 ||
             reason == null || reason.trim().isEmpty()) {
+
             throw new IllegalArgumentException(
                 "Positive minutes and a reason are required"
             );
@@ -244,7 +250,15 @@ public class GPUManagementSystem implements Serializable {
 
         student.grantMinutes(minutes);
 
-        // TODO: Record this grant and reason in storage.
+        TimeGrant grant = new TimeGrant(
+            studentId,
+            minutes,
+            reason,
+            scheduler.getSimulationTime(),
+            admin.getUsername()
+        );
+
+        timeGrants.add(grant);
     }
 
     // Adjust total allocated minutes
@@ -438,6 +452,72 @@ public class GPUManagementSystem implements Serializable {
         return result;
     }
 
+
+    public ArrayList<JobDetails> getStudentJobDetails(
+            String studentId) {
+
+        requireStudent(studentId);
+
+        ArrayList<JobDetails> result = new ArrayList<>();
+
+        for (Job job : scheduler.getAllJobs()) {
+
+            if (job.getStudentId().equals(studentId)) {
+
+                int queuePosition =
+                    scheduler.getQueuePosition(job.getJobId());
+
+                LocalDateTime predictedStart =
+                    scheduler.getPredictedStart(job.getJobId());
+
+                LocalDateTime predictedFinish =
+                    scheduler.getPredictedFinish(job.getJobId());
+
+                long remainingWait =
+                    scheduler.getRemainingWait(job.getJobId());
+
+                JobDetails details = new JobDetails(
+                    job,
+                    queuePosition,
+                    predictedStart,
+                    predictedFinish,
+                    remainingWait
+                );
+
+                result.add(details);
+            }
+        }
+
+        return result;
+    }
+
+
+public ArrayList<JobDetails> getAllJobDetails() {
+
+    requireAdmin();
+
+    ArrayList<JobDetails> result = new ArrayList<>();
+
+    for (Job job : scheduler.getAllJobs()) {
+
+        int jobId = job.getJobId();
+
+        JobDetails details = new JobDetails(
+            job,
+            scheduler.getQueuePosition(jobId),
+            scheduler.getPredictedStart(jobId),
+            scheduler.getPredictedFinish(jobId),
+            scheduler.getRemainingWait(jobId)
+        );
+
+        result.add(details);
+    }
+
+    return result;
+}
+
+
+
     // Student views their allowance
     public int getAvailableMinutes(String studentId) {
         return requireStudent(studentId)
@@ -478,6 +558,23 @@ public class GPUManagementSystem implements Serializable {
     public LocalDateTime getSimulationTime() {
         return scheduler.getSimulationTime();
     }
+
+    public ArrayList<TimeGrant> getTimeGrants(String studentId) {
+
+        requireAdmin();
+
+        ArrayList<TimeGrant> result = new ArrayList<>();
+
+        for (TimeGrant grant : timeGrants) {
+
+            if (grant.getStudentId().equals(studentId)) {
+                result.add(grant);
+            }
+        }
+
+        return result;
+    }
+
 
     // Get queue position (administrator)
     public int getQueuePosition(int jobId) {
@@ -601,4 +698,49 @@ public class GPUManagementSystem implements Serializable {
 
         return StorageManager.loadData();
     }
+
+    /* DATA VALIDATION */
+
+    private void validateRegistration(
+            String studentId,
+            String password,
+            String name,
+            String email,
+            String phone) {
+
+        if (studentId == null ||
+            !studentId.matches("[0-9]+")) {
+            throw new IllegalArgumentException(
+                "University ID must contain digits only"
+            );
+        }
+
+        if (password == null ||
+            password.trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                "Password cannot be empty"
+            );
+        }
+
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                "Name cannot be empty"
+            );
+        }
+
+        if (email == null ||
+            !email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            throw new IllegalArgumentException(
+                "Invalid email address"
+            );
+        }
+
+        if (phone == null ||
+            !phone.matches("[+]?[0-9]{7,15}")) {
+            throw new IllegalArgumentException(
+                "Invalid phone number"
+            );
+        }
+    }
+
 }
